@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Console Carole — L'Atelier de Carole</title>
+<meta name="theme-color" content="#a6763f">
+<style>
+  :root{
+    --bg:#f6f4f1; --card:#ffffff; --ink:#2b241f; --muted:#8a7d6f;
+    --accent:#a6763f; --green:#1aa06d; --red:#c0392b;
+    --border:#e7e0d6;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  header{background:var(--ink);color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  header h1{font-size:17px;margin:0;font-weight:600;}
+  header .sub{font-size:11.5px;color:#c9bfae;margin-top:2px;}
+  header .actions{display:flex;gap:8px;align-items:center;}
+  main{padding:14px;max-width:560px;margin:0 auto;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+  .card-title{font-size:14.5px;font-weight:700;margin:0 0 12px 0;display:flex;align-items:center;gap:8px;}
+  label{font-size:11.5px;color:var(--muted);display:block;margin:10px 0 4px;text-transform:uppercase;letter-spacing:.3px;}
+  input,select,textarea{width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--ink);font-family:inherit;}
+  textarea{min-height:70px;resize:vertical;}
+  .btn{padding:11px 18px;font-size:13.5px;font-weight:700;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--ink);}
+  .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn-block{width:100%;margin-top:12px;text-align:center;}
+  .btn-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);}
+  .icon-btn{width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;cursor:pointer;}
+  .msg{font-size:12.5px;margin-top:8px;}
+  .msg.ok{color:var(--green);} .msg.err{color:var(--red);}
+  .feed-item{border-left:3px solid var(--accent);background:#faf3ea;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:13px;}
+  .feed-item .feed-time{color:var(--muted);font-size:11px;}
+  .feed-item img{display:block;max-width:100%;border-radius:6px;margin-top:6px;}
+  .empty{color:var(--muted);font-size:13px;}
+  .preview{margin-top:10px;max-width:100%;border-radius:8px;display:none;}
+
+  .overlay{position:fixed;inset:0;background:rgba(20,18,14,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:16px;}
+  .overlay.open{display:flex;}
+  .box{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:360px;}
+  .box h2{font-size:16px;margin:0 0 14px;}
+  .box .error{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+  .link-btn{background:none;border:none;color:var(--muted);font-size:11.5px;text-decoration:underline;cursor:pointer;margin-top:14px;padding:0;display:block;}
+  .settings-box{max-width:440px;max-height:85vh;overflow-y:auto;}
+  .settings-box h3{font-size:13px;margin:16px 0 4px;color:var(--accent);}
+  .settings-box .hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4;}
+
+  .quicklinks{position:fixed;display:flex;flex-direction:column;gap:8px;z-index:150;}
+  .quicklinks a, .quicklinks button{width:5cm;text-align:center;font-size:12.5px;font-weight:700;padding:10px 6px;border-radius:8px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.15);border:none;}
+  .ql-feed{background:var(--green);color:#fff;cursor:pointer;font-family:inherit;}
+  @media(max-width:900px){.quicklinks{position:static !important;flex-direction:row;flex-wrap:wrap;margin:14px 0 0;top:auto !important;right:auto !important;} .quicklinks a, .quicklinks button{width:auto;flex:1;min-width:110px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>👋 Console Carole</h1>
+    <div class="sub" id="dateLabel"></div>
+  </div>
+  <div class="actions">
+    <button class="icon-btn" id="btnSettings" title="Configuration">⚙</button>
+    <button class="btn btn-ghost" id="btnLogout" style="display:none;">Déconnexion</button>
+  </div>
+</header>
+
+<!-- ===== ECRAN DE CONNEXION ===== -->
+<div class="overlay" id="loginOverlay">
+  <div class="box">
+    <h2>🔒 Connexion</h2>
+    <label>Code d'accès</label>
+    <input type="password" id="loginCode" inputmode="numeric" autocomplete="off" placeholder="••••">
+    <div class="error" id="loginError">Code incorrect.</div>
+    <button class="btn btn-primary btn-block" id="btnDoLogin">Se connecter</button>
+    <button type="button" class="link-btn" id="btnOpenSettingsFromLogin">⚙ Configuration (David)</button>
+  </div>
+</div>
+
+<!-- ===== REGLAGES (DAVID) ===== -->
+<div class="overlay" id="settingsOverlay">
+  <div class="box settings-box">
+    <h2>⚙ Configuration de la console</h2>
+
+    <label>Code d'accès de Carole</label>
+    <input type="text" id="s_code" placeholder="Ex : CAROLE2026">
+
+    <h3>Hébergement des photos (Imgur)</h3>
+    <label>Client ID Imgur</label>
+    <input type="text" id="s_imgur_id" placeholder="Client ID de l'application Imgur">
+    <p class="hint">Créé sur api.imgur.com/oauth2/addclient — choisir "Sans autorisation, pour un usage anonyme".</p>
+
+    <h3>Base de la galerie (Firebase Realtime Database)</h3>
+    <label>Database URL</label>
+    <input type="text" id="s_fb_url" placeholder="https://xxxx-default-rtdb.firebaseio.com">
+    <label>Secret / clé d'accès (si les règles de la base l'exigent)</label>
+    <input type="text" id="s_fb_secret" placeholder="Laisser vide si les règles sont ouvertes en écriture">
+    <label>Chemin de la galerie dans la base</label>
+    <input type="text" id="s_fb_path" placeholder="galerie">
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+      <button class="btn" id="btnCancelSettings">Annuler</button>
+      <button class="btn btn-primary" id="btnSaveSettings">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<main id="dashboard" style="display:none;">
+
+  <!-- MENU PRINCIPAL -->
+  <div class="card" id="menuView" style="position:relative;">
+    <p class="card-title">Que veux-tu faire ?</p>
+    <div class="quicklinks">
+      <button type="button" class="ql-feed" data-open="viewFeed">📋 Actions du jour</button>
+    </div>
+    <button class="btn btn-primary btn-block" data-open="viewPhoto" style="text-align:left;">📷 Ajouter une photo à la galerie</button>
+  </div>
+
+  <!-- AJOUTER UNE PHOTO -->
+  <div class="card" id="viewPhoto" style="display:none;">
+    <button class="link-btn" data-back style="color:var(--accent);margin:0 0 10px;">← Retour</button>
+    <p class="card-title">📷 Ajouter une photo à la galerie</p>
+    <label>Photo</label>
+    <input type="file" id="p_file" accept="image/*" capture="environment">
+    <img id="p_preview" class="preview">
+    <label>Description (optionnel)</label>
+    <textarea id="p_desc" placeholder="Ex : Commode avant/après décapage..."></textarea>
+    <button class="btn btn-primary btn-block" id="btnSavePhoto">✓ Ajouter à la galerie</button>
+    <div class="msg" id="p_msg"></div>
+  </div>
+
+  <!-- FIL DU JOUR -->
+  <div class="card" id="viewFeed" style="display:none;">
+    <button class="link-btn" data-back style="color:var(--accent);margin:0 0 10px;">← Retour</button>
+    <p class="card-title">📋 Ce que j'ai ajouté aujourd'hui</p>
+    <div id="feed"><p class="empty">Rien pour l'instant.</p></div>
+  </div>
+
+</main>
+
+<script>
+const today = ()=> new Date().toISOString().split('T')[0];
+const $ = id => document.getElementById(id);
+
+document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long'});
+
+let cfg = JSON.parse(localStorage.getItem('consoleCaroleConfig') || '{}');
+let logged = localStorage.getItem('consoleCaroleLogged') === '1';
+let feed = JSON.parse(localStorage.getItem('consoleCaroleFeed') || '[]');
+
+function configured(){ return !!(cfg.code); }
+
+/* ================= LOGIN / SETTINGS ================= */
+function showLogin(){ $("loginOverlay").classList.add("open"); }
+function hideLogin(){ $("loginOverlay").classList.remove("open"); }
+function showDashboard(){
+  $("dashboard").style.display = "block";
+  $("btnLogout").style.display = "inline-flex";
+  $("btnSettings").style.display = "none";
+  renderFeed();
+  goToMenu();
+}
+function hideDashboard(){
+  $("dashboard").style.display = "none";
+  $("btnLogout").style.display = "none";
+  $("btnSettings").style.display = "inline-flex";
+}
+function goToMenu(){
+  ["menuView","viewPhoto","viewFeed"].forEach(id=> $(id).style.display = "none");
+  $("menuView").style.display = "block";
+  positionQuicklinks();
+}
+function positionQuicklinks(){
+  const ql = document.querySelector(".quicklinks");
+  const title = document.querySelector("#menuView .card-title");
+  const logoutBtn = document.getElementById("btnLogout");
+  if(!ql || !title || !logoutBtn) return;
+  if(window.innerWidth <= 900 || $("menuView").style.display === "none"){
+    ql.style.top = ""; ql.style.right = ""; ql.style.left = "";
+    return;
+  }
+  const titleRect = title.getBoundingClientRect();
+  const logoutRect = logoutBtn.getBoundingClientRect();
+  ql.style.left = "auto";
+  ql.style.top = titleRect.top + "px";
+  ql.style.right = (window.innerWidth - logoutRect.right) + "px";
+}
+window.addEventListener("resize", positionQuicklinks);
+document.querySelectorAll("[data-open]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    ["menuView","viewPhoto","viewFeed"].forEach(id=> $(id).style.display = "none");
+    $(btn.dataset.open).style.display = "block";
+  });
+});
+document.querySelectorAll("[data-back]").forEach(btn=> btn.addEventListener("click", goToMenu));
+
+function boot(){
+  if(!configured()){ showLogin(); hideDashboard(); return; }
+  if(logged){ hideLogin(); showDashboard(); }
+  else { showLogin(); hideDashboard(); }
+}
+$("btnDoLogin").addEventListener("click", ()=>{
+  const code = $("loginCode").value.trim();
+  if(code && cfg.code && code === cfg.code){
+    logged = true;
+    localStorage.setItem("consoleCaroleLogged","1");
+    $("loginError").style.display = "none";
+    $("loginCode").value = "";
+    hideLogin();
+    showDashboard();
+  } else {
+    $("loginError").style.display = "block";
+  }
+});
+$("loginCode").addEventListener("keydown", e=>{ if(e.key==="Enter") $("btnDoLogin").click(); });
+$("btnLogout").addEventListener("click", ()=>{
+  logged = false;
+  localStorage.removeItem("consoleCaroleLogged");
+  hideDashboard();
+  showLogin();
+});
+function openSettings(){
+  $("s_code").value = cfg.code || "";
+  $("s_imgur_id").value = cfg.imgurId || "";
+  $("s_fb_url").value = cfg.fbUrl || "";
+  $("s_fb_secret").value = cfg.fbSecret || "";
+  $("s_fb_path").value = cfg.fbPath || "galerie";
+  $("settingsOverlay").classList.add("open");
+}
+$("btnSettings").addEventListener("click", openSettings);
+$("btnOpenSettingsFromLogin").addEventListener("click", openSettings);
+$("btnCancelSettings").addEventListener("click", ()=> $("settingsOverlay").classList.remove("open"));
+$("btnSaveSettings").addEventListener("click", ()=>{
+  cfg = {
+    code: $("s_code").value.trim(),
+    imgurId: $("s_imgur_id").value.trim(),
+    fbUrl: $("s_fb_url").value.trim().replace(/\/$/,""),
+    fbSecret: $("s_fb_secret").value.trim(),
+    fbPath: $("s_fb_path").value.trim() || "galerie"
+  };
+  localStorage.setItem("consoleCaroleConfig", JSON.stringify(cfg));
+  $("settingsOverlay").classList.remove("open");
+  boot();
+});
+
+/* ================= FIL DU JOUR ================= */
+function pushFeed(text, imgUrl){
+  feed.unshift({ text, imgUrl: imgUrl||null, time: new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}), date: today() });
+  feed = feed.filter(f=>f.date===today()).slice(0,30);
+  localStorage.setItem("consoleCaroleFeed", JSON.stringify(feed));
+  renderFeed();
+}
+function renderFeed(){
+  const todays = feed.filter(f=>f.date===today());
+  $("feed").innerHTML = todays.length
+    ? todays.map(f=>`<div class="feed-item">${f.text}<div class="feed-time">${f.time}</div>${f.imgUrl?`<img src="${f.imgUrl}">`:""}</div>`).join("")
+    : `<p class="empty">Rien pour l'instant.</p>`;
+}
+
+/* ================= AJOUTER UNE PHOTO ================= */
+$("p_file").addEventListener("change", ()=>{
+  const file = $("p_file").files[0];
+  const prev = $("p_preview");
+  if(!file){ prev.style.display="none"; return; }
+  const reader = new FileReader();
+  reader.onload = e=>{ prev.src = e.target.result; prev.style.display="block"; };
+  reader.readAsDataURL(file);
+});
+
+$("btnSavePhoto").addEventListener("click", async ()=>{
+  const msgEl = $("p_msg");
+  const file = $("p_file").files[0];
+  const desc = $("p_desc").value.trim();
+  if(!file){ msgEl.textContent = "Choisissez une photo avant d'envoyer"; msgEl.className="msg err"; return; }
+  if(!cfg.imgurId || !cfg.fbUrl){ msgEl.textContent = "Configuration Imgur/Firebase manquante"; msgEl.className="msg err"; return; }
+
+  msgEl.textContent = "Envoi de la photo..."; msgEl.className="msg";
+  try{
+    // 1) Upload vers Imgur
+    const form = new FormData();
+    form.append("image", file);
+    const imgurRes = await fetch("https://api.imgur.com/3/image", {
+      method: "POST",
+      headers: { Authorization: `Client-ID ${cfg.imgurId}` },
+      body: form
+    });
+    const imgurData = await imgurRes.json();
+    if(!imgurRes.ok || !imgurData.success) throw new Error(imgurData.data?.error || "Échec de l'envoi vers Imgur");
+    const url = imgurData.data.link;
+
+    // 2) Ajout de l'entrée dans Firebase Realtime Database
+    msgEl.textContent = "Ajout à la galerie...";
+    const fbUrl = `${cfg.fbUrl}/${cfg.fbPath}.json${cfg.fbSecret ? `?auth=${cfg.fbSecret}` : ""}`;
+    const fbRes = await fetch(fbUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, description: desc, date: today() })
+    });
+    if(!fbRes.ok) throw new Error(await fbRes.text());
+
+    msgEl.textContent = "✓ Photo ajoutée à la galerie"; msgEl.className="msg ok";
+    pushFeed(desc ? `📷 Photo ajoutée : <strong>${desc}</strong>` : "📷 Photo ajoutée à la galerie", url);
+    $("p_file").value = ""; $("p_desc").value = ""; $("p_preview").style.display = "none";
+    setTimeout(goToMenu, 1400);
+  }catch(e){
+    console.error(e);
+    msgEl.textContent = "Échec de l'ajout — " + e.message; msgEl.className="msg err";
+  }
+});
+
+boot();
+</script>
+</body>
+</html>
